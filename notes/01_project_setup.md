@@ -1,5 +1,5 @@
 🧭 01_project_setup.md
-📅 日期：2025-10-20
+📅 日期：2025-10-15
 💡 主題：專案初始化（Stock Project）
 一、目標
 
@@ -35,9 +35,9 @@ python -m venv .venv
 
 啟用後，PowerShell 會顯示虛擬環境名稱，表示目前的 Python 環境已切換成功。
 
-5️⃣ 安裝必要套件
-pip install --upgrade pip
-pip install yfinance pandas sqlalchemy sqlite3
+5️⃣ 安裝必要套件, 保證用的 pip 對應當前這個 venv Python 版本
+python3 -m pip install --upgrade pip
+python3 -m pip install yfinance pandas sqlalchemy sqlite3
 
 
 更新 pip，並安裝未來會用到的主要套件：
