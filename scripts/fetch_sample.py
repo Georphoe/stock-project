@@ -4,6 +4,18 @@ import pandas as pd # 處理表格資料的主力庫。
 import sqlite3 # 連接 SQLite 資料庫的標準庫。
 import os # 處理檔案路徑與目錄。
 
+
+abs_path = os.path.abspath(__file__)
+# 取得 fetch_data.py 的絕對路徑
+# __file__ 是 Python 內建變數，代表目前這支程式檔案的位置
+BASE_DIR = os.path.dirname(os.path.dirname(abs_path))
+# 取得專案根目錄
+DATA_DIR = os.path.join(BASE_DIR, "data")
+# 在專案根目錄下生成 data 資料夾
+# 結果：/project-root/data
+db_path = os.path.join(DATA_DIR, "stocks.db")
+# 組合完整資料庫檔案路徑
+
 os.makedirs("data", exist_ok=True)
 # 建立一個叫 data 的資料夾（如果已存在就不會報錯）。用來放 stocks.db
 
