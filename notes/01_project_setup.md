@@ -24,7 +24,13 @@ echo "# Stock Project" > README.md
 
 （使用 Windows PowerShell）
 
-python -m venv .venv
+python -m venv 
+
+🧩 命名原因
+
+. 開頭表示「隱藏」或「內部用途」，避免誤操作。
+是跨平台慣例（Linux/macOS 會自動隱藏） windows 不會。
+看名字就知道是虛擬環境資料夾。
 
 
 建立一個名為 .venv 的虛擬環境，確保專案依賴與系統環境分離。
@@ -35,7 +41,7 @@ python -m venv .venv
 
 啟用後，PowerShell 會顯示虛擬環境名稱，表示目前的 Python 環境已切換成功。
 
-5️⃣ 安裝必要套件, 保證用的 pip 對應當前這個 venv Python 版本
+5️⃣ 安裝必要套件, 保證用的 pip 對應當前這個 venv python3 -m pip show yfinancePython 版本
 python3 -m pip install --upgrade pip
 python3 -m pip install yfinance pandas sqlalchemy sqlite3
 
