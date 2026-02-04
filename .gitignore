@@ -1,1 +1,7 @@
-﻿.venv/
+﻿# 忽略所有資料庫檔案
+*.db
+data/
+# 忽略 Python 快取
+__pycache__/
+
+.venv/
