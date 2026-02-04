@@ -29,6 +29,11 @@ df = yf.download( symbol, start = "2020-01-01", end = "2025-01-01", progress = F
 # yfinance 回傳的 index 預設常是 DatetimeIndex（日期為索引）[ 是Time Series（時間序列）就是「一組依照時間順序排列的數據」 ]
 print(df.head())
 
+# 修正：如果回傳的是多層欄位，先把它壓平
+# 下載後的 df 欄位長這樣：[('Close', 'AAPL'), ('Open', 'AAPL')...] 需要壓平
+if isinstance(df.columns, pd.MultiIndex):
+    df.columns = df.columns.get_level_values(0)
+
 df = df.reset_index() # date becomes a column
 # 很多情況你要把資料寫入關聯式資料庫（如 SQLite）或做欄位命名/選取時，把日期當成欄位比當成 index 更方便（SQL table 都是以欄位為單位）
 df = df.rename(columns={"Date":"date", "Open":"open", "High":"high", "Low":"low", "Close":"close", "Volume":"volume"})
@@ -44,23 +49,96 @@ c = conn.cursor() # cursor
 # 從 conn（資料庫連線）建立一個 cursor（游標）物件，並指派給變數 c。這個 cursor 用來執行 SQL 語句（SELECT、INSERT、CREATE TABLE 等）以及取得查詢結果。
 
 c.executescript('''
+-- ==============================
+-- SQLite 註解說明
+-- 1. 單行註解：用兩個減號 --，後面到行尾都是註解
+-- 2. 多行註解：用 /* ... */，可以跨多行
+-- 3. 注意：不要用 Python 的 # 註解在 SQL 字串裡，SQLite 會報錯
+-- ==============================
+
+-- 建立 stocks 表格（如果不存在）
 CREATE TABLE IF NOT EXISTS stocks (
-    id INTEGER PRIMARY KEY, 
-    symbol TEXT UNIQUE, 
-    name TEXT
+    id INTEGER PRIMARY KEY,      -- 主鍵，唯一且不可為 NULL
+    symbol TEXT UNIQUE,          -- 股票代碼，唯一
+    name TEXT                    -- 股票名稱
 );
+
+-- 建立 prices 表格（如果不存在）
 CREATE TABLE IF NOT EXISTS prices (
-    id INTEGER PRIMARY KEY,
-    stock_id INTEGER,
-    date TEXT,
-    open REAL,
-    high REAL,
-    low REAL,
-    close REAL,
-    volume INTEGER,
-    UNIQUE(stock_id, date)
+    id INTEGER PRIMARY KEY,      -- 主鍵
+    stock_id INTEGER,            -- 對應 stocks 表的 id
+    date TEXT,                   -- 日期，格式可用 'YYYY-MM-DD'
+    open REAL,                   -- 開盤價
+    high REAL,                   -- 最高價
+    low REAL,                    -- 最低價
+    close REAL,                  -- 收盤價
+    volume INTEGER,              -- 成交量
+    UNIQUE(stock_id, date)       -- 同一股票同一天資料唯一
 )
 ''')
+# -- UNIQUE：約束（constraint），用來保證資料不重複
+
+# -- 1️⃣ 單一欄位 UNIQUE
+# -- 語法：column TYPE UNIQUE
+# -- 意思：這個欄位的值在整張表中不能重複
+# symbol TEXT UNIQUE
+
+# -- 2️⃣ 多欄位（組合）UNIQUE
+# -- 語法：UNIQUE(col1, col2)
+# -- 意思：這「一組值」不能重複，但單一欄位可重複
+# UNIQUE(stock_id, date)
 
 conn.commit()
+# conn.commit() 把 SQL 變更寫入檔案。
 
+# 嘗試把一支股票加入 stocks 表；如果這支股票已經存在（symbol 重複），就什麼都不做、也不報錯。
+# 使用 cursor 執行一條 SQL 語句（支援參數化，安全防 SQL Injection）
+"INSERT OR IGNORE INTO stocks(symbol, name) VALUES (?, ?)",
+# INSERT：新增一筆資料到 stocks 表
+# OR IGNORE：如果違反約束（例如 UNIQUE(symbol) 重複），就忽略這次插入，不報錯
+# INTO stocks(symbol, name)：指定要插入的表與欄位
+# VALUES (?, ?)：使用參數佔位符（?），實際值由下面的 tuple 傳入
+c.execute(
+    "INSERT OR IGNORE INTO stocks(symbol, name) VALUES (?, ?)", 
+    (symbol, symbol)
+)
+conn.commit()
+
+# 用股票代碼 symbol 去 stocks 表，查出它對應的 id（主鍵）
+c.execute("SELECT id FROM stocks WHERE symbol=?", (symbol,))
+# 為什麼一定要 (symbol,) 而不是 symbol？
+# 因為 execute() 的規則是： execute(sql, parameters), 第二個參數 必須是「可迭代物件」
+
+# 從資料庫查詢結果中，拿出第一筆資料的第一個欄位，存成 stock_id
+# 回傳型態是 tuple, 因為我們只選了 id 所以回傳 (id, )
+result = c.fetchone()
+if result:
+    stock_id = result[0]
+else:
+    # 處理找不到 id 的情況 (雖然 INSERT OR IGNORE 後通常會有，但這是好習慣)
+    raise ValueError(f"Cannot find stock id for symbol: {symbol}")
+
+
+# 把 DataFrame 的選定欄位寫進 SQLite 的一個暫存 table temp_prices。if_exists="replace" 表示若 temp_prices 已存在就先刪掉再建立。
+df[["date", "open", "high", "low", "close", "volume"]].to_sql("temp_prices", conn, if_exists="replace", index=False)
+# 指定資料庫內的資料表名稱為 'temp_prices'
+#  指定要寫入的資料庫連線物件（sqlite3 連線）
+#  若表格已存在則「先刪除再重建」，確保裡面只有本次寫入的新資料
+#  不要將 Pandas 自動生成的 0, 1, 2... 索引列存入資料庫
+
+c.execute("""
+INSERT OR REPLACE INTO prices(stock_id, date, open, high, low, close, volume)
+SELECT ?, date, open, high, low, close, volume FROM temp_prices
+""", (stock_id,))
+conn.commit()
+# 這段會把 temp_prices 的資料插到 prices：
+# INSERT OR REPLACE：若遇到 UNIQUE(stock_id, date) 衝突（同一天已存在資料），
+# REPLACE 會把舊 row 刪掉再插入新的（等同於 update）。這是實現簡單 upsert 的方式。
+# SELECT ?, date, ... FROM temp_prices：第一個 ? 被替換成 stock_id，把所有資料加上這個 stock_id 再寫入。
+
+# --- Good Practice: 過河拆橋，刪除暫存表 ---
+c.execute("DROP TABLE IF EXISTS temp_prices")
+print("temp_prices table deleted")
+
+conn.close()
+print("Saved", len(df), "rows to data/stocks.db")
