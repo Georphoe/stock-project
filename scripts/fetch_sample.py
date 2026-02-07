@@ -48,60 +48,18 @@ conn = sqlite3.connect(db_path) # database connection
 c = conn.cursor() # cursor
 # 從 conn（資料庫連線）建立一個 cursor（游標）物件，並指派給變數 c。這個 cursor 用來執行 SQL 語句（SELECT、INSERT、CREATE TABLE 等）以及取得查詢結果。
 
-c.executescript('''
--- ==============================
--- SQLite 註解說明
--- 1. 單行註解：用兩個減號 --，後面到行尾都是註解
--- 2. 多行註解：用 /* ... */，可以跨多行
--- 3. 注意：不要用 Python 的 # 註解在 SQL 字串裡，SQLite 會報錯
--- ==============================
-
--- 建立 stocks 表格（如果不存在）
-CREATE TABLE IF NOT EXISTS stocks (
-    id INTEGER PRIMARY KEY,      -- 主鍵，唯一且不可為 NULL
-    symbol TEXT UNIQUE,          -- 股票代碼，唯一
-    name TEXT                    -- 股票名稱
-);
-
--- 建立 prices 表格（如果不存在）
-CREATE TABLE IF NOT EXISTS prices (
-    id INTEGER PRIMARY KEY,      -- 主鍵
-    stock_id INTEGER,            -- 對應 stocks 表的 id
-    date TEXT,                   -- 日期，格式可用 'YYYY-MM-DD'
-    open REAL,                   -- 開盤價
-    high REAL,                   -- 最高價
-    low REAL,                    -- 最低價
-    close REAL,                  -- 收盤價
-    volume INTEGER,              -- 成交量
-    UNIQUE(stock_id, date)       -- 同一股票同一天資料唯一
-)
-''')
-# -- UNIQUE：約束（constraint），用來保證資料不重複
-
-# -- 1️⃣ 單一欄位 UNIQUE
-# -- 語法：column TYPE UNIQUE
-# -- 意思：這個欄位的值在整張表中不能重複
-# symbol TEXT UNIQUE
-
-# -- 2️⃣ 多欄位（組合）UNIQUE
-# -- 語法：UNIQUE(col1, col2)
-# -- 意思：這「一組值」不能重複，但單一欄位可重複
-# UNIQUE(stock_id, date)
-
-conn.commit()
-# conn.commit() 把 SQL 變更寫入檔案。
 
 # 嘗試把一支股票加入 stocks 表；如果這支股票已經存在（symbol 重複），就什麼都不做、也不報錯。
 # 使用 cursor 執行一條 SQL 語句（支援參數化，安全防 SQL Injection）
-"INSERT OR IGNORE INTO stocks(symbol, name) VALUES (?, ?)",
-# INSERT：新增一筆資料到 stocks 表
-# OR IGNORE：如果違反約束（例如 UNIQUE(symbol) 重複），就忽略這次插入，不報錯
-# INTO stocks(symbol, name)：指定要插入的表與欄位
-# VALUES (?, ?)：使用參數佔位符（?），實際值由下面的 tuple 傳入
 c.execute(
     "INSERT OR IGNORE INTO stocks(symbol, name) VALUES (?, ?)", 
     (symbol, symbol)
 )
+# "INSERT OR IGNORE INTO stocks(symbol, name) VALUES (?, ?)",
+# INSERT：新增一筆資料到 stocks 表
+# OR IGNORE：如果違反約束（例如 UNIQUE(symbol) 重複），就忽略這次插入，不報錯
+# INTO stocks(symbol, name)：指定要插入的表與欄位
+# VALUES (?, ?)：使用參數佔位符（?），實際值由下面的 tuple 傳入
 conn.commit()
 
 # 用股票代碼 symbol 去 stocks 表，查出它對應的 id（主鍵）
@@ -141,4 +99,10 @@ c.execute("DROP TABLE IF EXISTS temp_prices")
 print("temp_prices table deleted")
 
 conn.close()
+# 為什麼要 conn.close():
+# 1. 釋放資料庫連線資源（連線數、記憶體、socket）
+# 2. 避免連線佔住導致 "too many connections"
+# 3. 防止 transaction / lock 沒結束，影響其他操作
+# 4. 確保程式行為穩定、可預期
+# ⚠️ 尤其在 long-running 程式（API / Server / CI）中一定要關
 print("Saved", len(df), "rows to data/stocks.db")
