@@ -1,6 +1,6 @@
 # scripts/fetch_sample.py
 import yfinance as yf # 從 Yahoo Finance 下載股價資料的套件（非官方 API，但簡單好用） 
-import pandas as pd # 處理表格資料的主力庫。
+import pandas as pd # 處理表格資料的主力庫。 Pandas DataFrame
 import sqlite3 # 連接 SQLite 資料庫的標準庫。
 import os # 處理檔案路徑與目錄。
 
@@ -9,6 +9,7 @@ abs_path = os.path.abspath(__file__)
 # 取得 fetch_data.py 的絕對路徑
 # __file__ 是 Python 內建變數，代表目前這支程式檔案的位置
 BASE_DIR = os.path.dirname(os.path.dirname(abs_path))
+# dirname() 只是：把最後一段路徑切掉, 等於手動找到根目錄
 # 取得專案根目錄 :/ STOCK-PROJECT
 DATA_DIR = os.path.join(BASE_DIR, "data")
 # 這一行「只會組路徑，不會生成資料夾」
@@ -77,6 +78,7 @@ else:
     raise ValueError(f"Cannot find stock id for symbol: {symbol}")
 
 
+# 先清洗、驗證、處理完，再寫進正式表。
 # 把 DataFrame 的選定欄位寫進 SQLite 的一個暫存 table temp_prices。if_exists="replace" 表示若 temp_prices 已存在就先刪掉再建立。
 df[["date", "open", "high", "low", "close", "volume"]].to_sql("temp_prices", conn, if_exists="replace", index=False)
 # 指定資料庫內的資料表名稱為 'temp_prices'
