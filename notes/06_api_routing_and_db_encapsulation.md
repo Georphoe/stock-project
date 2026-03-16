@@ -1,126 +1,339 @@
-🧭 06_api_routing_and_db_encapsulation.md
-📅 日期：2026-03-10
-💡 主題：API 路由設計、DB 封裝、FastAPI 工程慣例、測試
+🧭 06_api_routing_and_db_encapsulation.md  
+📅 日期：2026-03-10  
+💡 主題：API 路由設計、DB 封裝、FastAPI 工程慣例、測試  
 
-一、本週核心工作
+---
 
-設計簡單 REST 路由概念
+# 🚧 一、本週核心工作
 
-封裝 DB 查詢函數 (query_prices)
+- 設計簡單 REST 路由概念
+- 封裝 DB 查詢函數 `query_prices`
+- 建立 FastAPI endpoint  
+  `GET /stocks/{symbol}/prices`
+- 梳理專案結構並理解 `__init__.py` 作用
+- 更新專案，為 watchlist / 指標計算預留擴展
+- 撰寫簡單測試程式 `test_query.py` 確認 DB 與函數運作
 
-建立 FastAPI endpoint （GET /stocks/{symbol}/prices）
+---
 
-梳理專案結構並理解 __init__.py 作用
+# 🌐 二、API 路由設計要點
 
-更新專案，為 watchlist / 指標計算預留擴展
+📌 **REST 設計理念**
 
-撰寫簡單測試程式 test_query.py 確認 DB 與函數運作
+- REST 直覺、學習成本低
+- MVP 階段非常適合
+- URL 應該表達「資源」
 
-二、API 路由設計要點
+---
 
-REST 直覺、學習成本低，MVP 推薦使用
+📌 **同步 vs 非同步**
 
-路由設計應清楚表達資源與操作
+- `sync` → 一般請求
+- `async` → 適合大量 request / IO 操作
 
-同步 vs 非同步：async 適合大量或即時請求
+FastAPI 原生支援：
 
-建議路由概念（示意，不需全部實作）：
+```python
+async def endpoint():
 
-/api/stocks?symbol=XXX → 股票基本資訊
+📌 建議 API 設計（示意）
 
-/api/stocks/{symbol}/prices?start=&end= → 區間價格查詢
+/api/stocks?symbol=XXX
+→ 股票基本資訊
 
-/api/watchlist、/api/indicators → 未來擴展
+/api/stocks/{symbol}/prices?start=&end=
+→ 區間價格查詢
 
-三、DB 封裝與工程思維
+/api/watchlist
+→ 使用者股票清單（未來擴展）
 
-封裝 DB 查詢讓 API 層與資料層分離
+/api/indicators
+→ 技術指標計算（未來擴展）
+📦 三、DB 封裝與工程思維
 
-優點：清楚責任分層、易測試、易維護
+📌 為什麼要封裝 DB
 
-Single Responsibility Principle：init_db.py（建表） vs ingest_data.py（寫資料）
+將 API layer 與 Data layer 分離
 
-四、Python 專案結構與 init.py
+優點：
 
-__init__.py：
+易維護
 
-將資料夾標記為 package
+易測試
 
-可初始化或暴露函數給上層使用
+邏輯清楚
 
-建議結構：
+📌 Single Responsibility Principle
+
+不同檔案負責不同任務：
+
+init_db.py
+→ 建立資料表
+
+ingest_data.py
+→ 寫入資料
+
+db.py
+→ 查詢資料
+
+📌 典型資料流程
+
+API endpoint
+      ↓
+query_prices()
+      ↓
+Database
+      ↓
+Return JSON
+📂 四、Python 專案結構與 __init__.py
+
+📌 __init__.py 的作用
+
+1️⃣ 將資料夾標記為 Python package
+
+2️⃣ 允許 import：
+
+from backend.db import query_prices
+
+📌 建議專案結構
 
 backend/
     __init__.py
     main.py          # FastAPI endpoint
     db.py            # DB 封裝函數
+
 data/
     stocks.db
+
 scripts/
     init_db.py
     ingest_data.py
+
 test/
     test_query.py
-五、測試程式 test_query.py
+🧪 五、測試程式 test_query.py
 
-範例程式：
+📌 範例程式
 
 from backend.src.main import query_prices
 
 try:
     data = query_prices("AAPL")
-    print('success')
+
+    print("success")
     print(data[0])
+
 except Exception as e:
     print("Error:", e)
-功能與工程觀念
-
+🎯 功能與工程觀念
 1️⃣ 確認封裝函數運作正常
 
-測試 query_prices 是否能正確連 DB 並回傳資料
+測試：
 
+query_prices()
+是否能正確連接 DB
 2️⃣ 捕捉例外
 
-用 try/except 避免程式崩潰
+使用：
 
-可以快速定位問題（DB 連線、SQL 語法、欄位錯誤）
+try / except
 
-3️⃣ 簡單可讀
+避免程式崩潰。
 
-只印第一筆資料即可確認結果
+可以快速定位問題：
 
-適合快速 smoke test
+DB 連線問題
+
+SQL 錯誤
+
+欄位錯誤
+
+3️⃣ 簡單 Smoke Test
+
+只印第一筆資料：
+
+print(data[0])
+
+就能確認功能是否正常。
 
 📌 工程思維
 
-每個模組封裝完成後都應有簡單測試
+每個模組完成後都應該：
 
-測試與主程式分層，避免測試程式干擾主程式運行
+先寫簡單測試
 
-這也是後續導入 pytest 或 CI/CD 的基礎
+優點：
 
-六、工程慣例重點
+快速 debug
 
-REST API route 命名直覺
+避免影響主程式
 
-DB 操作封裝集中管理
+方便未來加入 CI/CD
 
-專案分層清楚，利於維護與測試
+🛠 六、建立 Python 檔案（PowerShell 指令）
 
-README.md 說明架構和執行流程
+在 Windows PowerShell 可以快速建立檔案：
 
-PowerShell 可快速初始化檔案（New-Item main.py -ItemType File）
+New-Item main.py -ItemType File
 
-七、本週學習重點（面試可用）
+📌 作用：
 
-REST API 設計思維
+建立一個新的 Python 檔案
 
-DB 層封裝與責任分離
+等同於：
 
-專案結構規劃
+右鍵 → New File → main.py
 
-__init__.py 的角色
+⚠️ 重要
 
-撰寫簡單測試程式確認函數運作
+這個指令：
 
-為未來 watchlist / 指標計算保留擴展空間
+不會執行 Python
+
+不會啟動 API
+
+只是建立檔案
+
+建立檔案後才可以在 main.py 裡寫 FastAPI 程式。
+
+🚀 七、啟動與測試 API
+⚙️ 1. 啟動 FastAPI
+# 進入專案目錄
+cd backend
+
+# 安裝依賴
+pip install fastapi uvicorn
+
+# 啟動 API
+uvicorn main:app --reload
+
+📌 指令解析
+
+uvicorn
+→ 啟動 Web Server
+
+main
+→ main.py
+
+app
+→ app = FastAPI()
+
+--reload
+→ 程式碼變更自動重啟
+
+📌 API 會啟動在：
+
+http://127.0.0.1:8000
+🌐 2. 測試 API
+
+使用瀏覽器或 API 工具：
+
+GET http://127.0.0.1:8000/stocks/AAPL/prices
+
+成功會返回：
+
+JSON 格式資料
+📑 3. Swagger UI（FastAPI 自動生成）
+
+FastAPI 會自動生成 API 文件：
+
+http://127.0.0.1:8000/docs
+
+可以：
+
+查看 API
+
+發送 request
+
+檢查 response
+
+🧪 4. API 測試策略
+
+測試順序：
+
+1️⃣ 先測 DB function
+2️⃣ 再測 API endpoint
+
+未來可使用：
+
+pytest
+httpx
+
+進行自動化測試。
+
+⚙️ 八、uvicorn 與 ASGI Server
+🧠 uvicorn 是什麼
+
+uvicorn 是一個 ASGI Web Server
+
+它的工作是：
+
+1️⃣ 啟動 Web server
+2️⃣ 接收 HTTP request
+3️⃣ 呼叫 FastAPI
+4️⃣ 回傳 response
+
+📌 資料流程
+
+Browser
+   ↓
+Uvicorn
+   ↓
+FastAPI
+   ↓
+Python function
+   ↓
+Database
+   ↓
+Response JSON
+🧠 ASGI Server 是什麼
+
+ASGI =
+
+Asynchronous Server Gateway Interface
+
+它是一個 Web Server 與 Python Web Framework 之間的標準介面。
+
+📌 架構
+
+Browser
+   ↓
+HTTP Request
+   ↓
+ASGI Server (uvicorn)
+   ↓
+FastAPI
+   ↓
+Python 程式邏輯
+   ↓
+Response
+
+📌 ASGI 的特點
+
+支援 async
+
+高併發
+
+支援 WebSocket
+
+適合高效能 API
+
+🧠 為什麼 FastAPI 使用 ASGI
+
+FastAPI 是設計給 非同步架構 的 framework。
+
+因此需要：
+
+ASGI Server
+
+而不是舊的：
+
+WSGI Server
+
+📌 常見 ASGI server：
+
+uvicorn
+hypercorn
+daphne
+
+其中 uvicorn 最常見。

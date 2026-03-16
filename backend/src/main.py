@@ -46,3 +46,8 @@ def query_prices(symbol, start = None, end = None):
 @app.get("/api/stocks/{symbol}/prices")
 def get_prices(symbol: str, start: str = None, end: str = None):
     return query_prices(symbol.upper(), start, end) #  symbol.upper() 確保股票代碼統一為大寫
+
+# API endpoint: 測試 API 是否運行
+@app.get("/")
+def root():
+    return {"message": "Stock API running"}   
