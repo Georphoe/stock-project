@@ -1,21 +1,24 @@
-# Stock Data Ingestion Project
+# Stock Data Ingestion & API Project
 
-A beginner-friendly project that fetches historical stock price data from **Yahoo Finance** and stores it in a local **SQLite** database.
+A beginner-friendly project that fetches historical stock price data from **Yahoo Finance**, stores it in a local **SQLite** database, and provides a **FastAPI REST API** for querying stock prices.
 
 This project is designed as a hands-on introduction to:
 
-* Data ingestion (fetching external data)
-* Relational database schema design
-* Basic *upsert* logic for time-series data
+- Data ingestion (fetching external data)
+- Relational database schema design
+- Basic *upsert* logic for time-series data
+- REST API development with FastAPI
 
 ---
 
 ## Features
 
-* Fetch daily stock price data using `yfinance`
-* Store stock metadata and historical prices in SQLite
-* Prevent duplicate price records using database constraints
-* Simple, reproducible local setup (no server required)
+- Fetch daily stock price data using `yfinance`
+- Store stock metadata and historical prices in SQLite
+- Prevent duplicate price records using database constraints
+- Simple, reproducible local setup (no server required)
+- **FastAPI REST API** to query stock prices
+- Swagger UI interactive documentation
 
 ---
 
@@ -25,6 +28,8 @@ This project is designed as a hands-on introduction to:
 * SQLite
 * pandas
 * yfinance
+* FastAPI
+* Uvicorn
 
 ---
 
@@ -32,12 +37,21 @@ This project is designed as a hands-on introduction to:
 
 ```
 stock-project/
+│
+├─ backend/
+│  └─ src/
+│      ├─ __init__.py   # 讓 src 成為 package
+│      └─ main.py       # FastAPI REST API
+│
 ├─ scripts/
-│  ├─ init_db.py        # Initialize database schema (tables)
-│  └─ fetch_sample.py  # Fetch stock data and insert into DB
+│  ├─ init_db.py        # Initialize database schema
+│  └─ fetch_sample.py   # Fetch stock data from Yahoo Finance
 │
 ├─ data/
-│  └─ stocks.db        # SQLite database file (auto-generated)
+│  └─ stocks.db         # SQLite database
+│
+├─ test/
+│  └─ test_query.py     # Simple function test
 │
 ├─ README.md
 └─ requirements.txt
@@ -105,6 +119,76 @@ Example output:
 ```text
 Saved 1258 rows to data/stocks.db
 ```
+
+### 4. Start the FastAPI server
+```bash
+# Navigate to project root
+cd backend
+
+# Install FastAPI and Uvicorn if not installed
+pip install fastapi uvicorn
+
+# Start API server
+uvicorn main:app --reload
+```
+--reload → automatically reload on code changes
+
+API available at: http://127.0.0.1:8000
+
+---
+
+REST API Endpoints
+1️⃣ Root Endpoint
+
+Check server is running:
+
+GET /
+
+Example response:
+
+{"message": "Stock API running"}
+2️⃣ Get Stock Prices
+GET /api/stocks/{symbol}/prices
+
+Query parameters (optional):
+
+start=YYYY-MM-DD → start date
+
+end=YYYY-MM-DD → end date
+
+Example:
+
+GET http://127.0.0.1:8000/api/stocks/AAPL/prices?start=2024-01-01&end=2024-12-31
+
+Example JSON response:
+
+[
+  {"date": "2026-03-06", "open": 100, "high": 105, "low": 98, "close": 102, "volume": 1500000},
+  {"date": "2026-03-05", "open": 102, "high": 106, "low": 101, "close": 104, "volume": 1200000}
+]
+3️⃣ Interactive API Docs (Swagger UI)
+
+FastAPI auto-generates docs:
+
+http://127.0.0.1:8000/docs
+
+You can test API requests directly in the browser.
+
+---
+
+Testing DB Functions
+
+Before testing the API, you can test DB query functions:
+
+python test/test_query.py
+
+Purpose:
+
+Confirm query_prices connects to DB correctly
+
+Ensure JSON output format
+
+Quick smoke test before API deployment
 
 ---
 
