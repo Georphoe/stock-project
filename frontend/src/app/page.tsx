@@ -7,6 +7,8 @@ import { useState } from "react";
 // 👉 從 React 引入 useState（Hook）
 // 用來在函式元件中管理「狀態」
 
+
+
 export default function Home() {
   // 👉 定義一個 React 元件（頁面）
 
@@ -20,27 +22,35 @@ export default function Home() {
   // 👉 初始值是 null（代表還沒查詢）
   // 👉 any：暫時不限制型別（之後可以改成 interface）
 
-  const handleSearch = () => {
+  // const [chartData, setChartData] = useState([]);
+
+  const handleSearch = async () => {
     // 👉 當使用者點擊 Search 按鈕時會執行這個函式
 
-    // 👉 目前用「假資料」模擬 API 回傳
-    // 👉 之後會改成 fetch / axios 去呼叫後端 API
-    const fakeData = {
-      symbol: ticker.toUpperCase(), 
-      // 👉 把輸入的 ticker 轉成大寫（例如 aapl → AAPL）
 
-      price: (Math.random() * 100 + 100).toFixed(2),
-      // 👉 產生隨機股價（100 ~ 200）
-      // 👉 toFixed(2) → 保留小數點 2 位
+    // TODO 修改網址
+    const res = await fetch(
+      `http://localhost:8000/api/stocks/${ticker}/prices`
+    );
 
-      change: (Math.random() * 10 - 5).toFixed(2),
-      // 👉 產生漲跌幅（-5% ~ +5%）
-      // 👉 負數 = 下跌，正數 = 上漲
+    const data = await res.json() // 要解析資料（也可能耗時）
+
+    if (!data || data.length === 0) {
+      alert("No data found");
+      return;
+    }
+
+    // setChartData(data);
+
+    const latest = data[data.length - 1];
+
+    const realData = {
+      symbol: ticker.toUpperCase(),
+      price: latest.close,
+      change: (latest.close - latest.open).toFixed(2),
     };
-
-    setStock(fakeData);
-    // 👉 把假資料存進 state
-    // 👉 React 會自動重新 render 畫面
+  
+    setStock(realData);
   };
 
   return (
@@ -97,8 +107,8 @@ export default function Home() {
       </button>
 
       {/* 👇 股票卡片 */}
-      {stock && (
-        // 👉 只有當 stock 有值時才會顯示
+      {stock && ( 
+        // 👉 conditional rendering (stock 要 True and (...)) 只有當 stock 有值時才會顯示
         // 👉 null / undefined 不會 render
 
         <div className="mt-6 p-6 border rounded shadow w-64 text-center">
@@ -125,6 +135,15 @@ export default function Home() {
           </p>
         </div>
       )}
+
+      {/* {chartData.length > 0 && (
+        <div>
+          <StockChart data={chartData} />
+
+        </div>
+      )} */}
+
+
     </div>
   );
 }
