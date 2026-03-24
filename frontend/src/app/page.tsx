@@ -7,7 +7,7 @@ import { useState } from "react";
 // 👉 從 React 引入 useState（Hook）
 // 用來在函式元件中管理「狀態」
 
-
+import StockChart from "../components/StockChart";
 
 export default function Home() {
   // 👉 定義一個 React 元件（頁面）
@@ -24,8 +24,11 @@ export default function Home() {
 
   // const [chartData, setChartData] = useState([]);
 
+  const [chartData, setChartData] = useState([]); 
+
   const handleSearch = async () => {
     // 👉 當使用者點擊 Search 按鈕時會執行這個函式
+
 
 
     // TODO 修改網址
@@ -41,6 +44,7 @@ export default function Home() {
     }
 
     // setChartData(data);
+    setChartData(data);
 
     const latest = data[data.length - 1];
 
@@ -136,12 +140,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* {chartData.length > 0 && (
+      {chartData.length > 0 && (
         <div>
           <StockChart data={chartData} />
 
         </div>
-      )} */}
+      )}
 
 
     </div>
