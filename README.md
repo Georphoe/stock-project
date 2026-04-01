@@ -1,6 +1,9 @@
 # Stock Data Ingestion & API Project
 
-A beginner-friendly project that fetches historical stock price data from **Yahoo Finance**, stores it in a local **SQLite** database, and provides a **FastAPI REST API** for querying stock prices.
+A full-stack project that fetches historical stock price data from **Yahoo Finance**, stores it in a local **SQLite** database, and exposes a **FastAPI REST API** for querying and analyzing stock data.
+
+## 🚧 Status
+This project is currently under active development (MVP stage). Core backend functionality (data ingestion + API) is implemented, and frontend visualization is in progress.
 
 This project is designed as a hands-on introduction to:
 
