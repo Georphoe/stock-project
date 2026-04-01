@@ -14,14 +14,18 @@ This project is designed as a hands-on introduction to:
 
 ---
 
-## Features
+## ✨ Features (MVP)
 
-- Fetch daily stock price data using `yfinance`
-- Store stock metadata and historical prices in SQLite
-- Prevent duplicate price records using database constraints
-- Simple, reproducible local setup (no server required)
-- **FastAPI REST API** to query stock prices
-- Swagger UI interactive documentation
+- Fetch historical stock price data (OHLCV) using `yfinance`
+- Store stock metadata and time-series data in SQLite
+- Expose a FastAPI REST API for querying stock prices
+- Support filtering by date range via API endpoints
+- Prevent duplicate records using database constraints
+
+## 🛠️ Developer Experience
+
+- Interactive API docs via Swagger UI
+- Simple, reproducible local setup (no external services required)
 
 ---
 
